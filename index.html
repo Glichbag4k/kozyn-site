@@ -705,6 +705,75 @@
             }
         }
         
+        /* Нові стилі для реального часу */
+        .new-message-indicator {
+            position: absolute;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            cursor: pointer;
+            display: none;
+            z-index: 100;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(52, 152, 219, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0); }
+        }
+        
+        .new-message {
+            animation: newMessageHighlight 1.5s ease;
+        }
+        
+        @keyframes newMessageHighlight {
+            0% { background-color: rgba(52, 152, 219, 0.3); }
+            100% { background-color: inherit; }
+        }
+        
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 15px;
+            background: white;
+            border-radius: 15px;
+            margin: 5px 20px;
+            font-size: 14px;
+            color: #666;
+            border: 1px solid #ddd;
+            display: none;
+        }
+        
+        .typing-dots {
+            display: flex;
+            gap: 3px;
+        }
+        
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: #666;
+            border-radius: 50%;
+            animation: typingDot 1.4s infinite;
+        }
+        
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typingDot {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+        
         .wood-border {
             border-image: url('data:image/svg+xml;utf8,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><pattern id="wood" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="%238b4513"/><path d="M0,0 L20,20 M20,0 L0,20" stroke="%235d2e0c" stroke-width="2"/></pattern><rect width="100" height="100" fill="url(%23wood)"/></svg>') 30 stretch;
             border-width: 15px;
@@ -880,6 +949,7 @@
                         <a href="#" class="nav-link" onclick="showChat()">
                             <i class="fas fa-comments"></i>
                             Чат
+                            <span id="unreadBadge" style="display:none; background:#e74c3c; color:white; padding:2px 6px; border-radius:10px; font-size:12px;">0</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -927,7 +997,7 @@
                 <div style="text-align: center; padding: 20px; background: rgba(142, 68, 173, 0.1); border-radius: 12px;">
                     <i class="fas fa-comments" style="font-size: 48px; color: #8e44ad; margin-bottom: 15px;"></i>
                     <h3 style="color: var(--dark); margin-bottom: 10px;">Чат</h3>
-                    <p>Спілкування з односельцями</p>
+                    <p>Спілкування з односельцями в реальному часі</p>
                 </div>
                 
                 <div style="text-align: center; padding: 20px; background: rgba(192, 57, 43, 0.1); border-radius: 12px;">
@@ -1001,17 +1071,35 @@
                     </div>
                 </div>
                 
+                <!-- Індикатор того, що хтось пише -->
+                <div class="typing-indicator" id="typingIndicator">
+                    <span id="typingUser"></span>
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+                
                 <div class="chat-input-area">
-                    <input type="text" class="chat-input" id="chatInput" placeholder="Введіть повідомлення..." onkeypress="handleChatKeyPress(event)">
+                    <input type="text" class="chat-input" id="chatInput" 
+                           placeholder="Введіть повідомлення..." 
+                           onkeypress="handleChatKeyPress(event)"
+                           oninput="handleTyping()">
                     <button class="special-btn btn-chat" style="margin: 0;" onclick="sendMessage()">
                         <i class="fas fa-paper-plane"></i>
                     </button>
+                </div>
+                
+                <!-- Індикатор нових повідомлень -->
+                <div class="new-message-indicator" id="newMessageIndicator" onclick="scrollToNewMessages()">
+                    <i class="fas fa-arrow-down"></i> Нові повідомлення
                 </div>
             </div>
             
             <div style="margin-top: 20px; text-align: center;">
                 <small style="color: #666;" id="chatInfo">
-                    Чат працює в реальному чаті. Натисніть правою кнопкою миші на повідомлення для меню.
+                    Чат працює в реальному часі. Натисніть правою кнопкою миші на повідомлення для меню.
                 </small>
             </div>
         </section>
@@ -1027,9 +1115,8 @@
                     <i class="fas fa-user-shield"></i> Вхід для адміністратора
                 </h3>
                 <div class="form-group">
-                    <label class="form-label">Секретний пароль адміна *</label>
+                    <label class="form-label">Секретний пароль *</label>
                     <input type="password" id="adminPassword" class="form-input" placeholder="Введіть секретний пароль" required>
-                    <small style="color: #666; margin-top: 5px; display: block;">Error 503:Not found (server error)</small>
                 </div>
                 <button class="special-btn btn-admin" onclick="loginAdmin()" style="width: 100%; margin: 20px 0;">
                     <i class="fas fa-lock"></i>
@@ -1230,6 +1317,14 @@
         let selectedMessageId = null;
         let contextMenu = document.getElementById('contextMenu');
         
+        // Змінні для реального часу
+        let lastMessageId = 0; // Останнє відображене повідомлення
+        let unreadCount = 0; // Кількість непрочитаних повідомлень
+        let isUserTyping = false;
+        let typingTimeout = null;
+        let checkInterval = null; // Інтервал для перевірки нових повідомлень
+        let isChatVisible = false;
+        
         // Завантаження з localStorage
         function loadData() {
             const savedMessages = localStorage.getItem('villageMessages');
@@ -1237,6 +1332,7 @@
             const savedUsers = localStorage.getItem('villageUsers');
             const savedCurrentUser = localStorage.getItem('villageCurrentUser');
             const savedIsAdmin = localStorage.getItem('villageIsAdmin');
+            const savedLastMessageId = localStorage.getItem('villageLastMessageId');
             
             if (savedMessages) messages = JSON.parse(savedMessages);
             if (savedAds) ads = JSON.parse(savedAds);
@@ -1245,12 +1341,18 @@
             // Відновлюємо сесію користувача
             if (savedCurrentUser) {
                 currentUser = JSON.parse(savedCurrentUser);
-                console.log('Відновлено користувача:', currentUser);
             }
             
             if (savedIsAdmin) {
                 isAdmin = JSON.parse(savedIsAdmin);
-                console.log('Відновлено статус адміна:', isAdmin);
+            }
+            
+            // Відновлюємо останнє повідомлення
+            if (savedLastMessageId) {
+                lastMessageId = parseInt(savedLastMessageId);
+            } else if (messages.length > 0) {
+                // Знаходимо останнє повідомлення
+                lastMessageId = Math.max(...messages.map(m => m.id));
             }
         }
         
@@ -1266,13 +1368,16 @@
             if (currentUser) {
                 localStorage.setItem('villageCurrentUser', JSON.stringify(currentUser));
                 localStorage.setItem('villageIsAdmin', JSON.stringify(isAdmin));
-                console.log('Сесія збережена:', currentUser.name, 'Admin:', isAdmin);
             } else {
                 // Якщо користувач вийшов, очищуємо сесію
                 localStorage.removeItem('villageCurrentUser');
                 localStorage.removeItem('villageIsAdmin');
-                console.log('Сесія очищена');
             }
+        }
+        
+        // Збереження останнього повідомлення
+        function saveLastMessageId() {
+            localStorage.setItem('villageLastMessageId', lastMessageId.toString());
         }
         
         // Очищення сесії
@@ -1292,19 +1397,15 @@
                 const userExists = users.find(u => u.id === currentUser.id && u.name === currentUser.name);
                 
                 if (!userExists) {
-                    console.log('Користувач більше не існує, очищуємо сесію');
                     clearSession();
                     alert('Ваш акаунт більше не існує або був видалений.');
                 } else if (userExists.isBanned) {
-                    console.log('Користувач заблокований, очищуємо сесію');
                     clearSession();
                     alert('Ваш акаунт був заблокований адміністратором.');
                 } else {
                     // Оновлюємо дані користувача з бази
                     currentUser = userExists;
                     isAdmin = userExists.isAdmin;
-                    console.log('Сесія відновлена:', currentUser.name, 'Admin:', isAdmin);
-                    alert(`Вітаємо з поверненням, ${currentUser.name}!`);
                 }
             }
             
@@ -1314,6 +1415,9 @@
             updateHeader();
             updateChatUI();
             showHome();
+            
+            // Запускаємо перевірку нових повідомлень кожну секунду
+            startRealTimeUpdates();
             
             // Запобігання стандартному контекстному меню
             document.addEventListener('contextmenu', function(e) {
@@ -1336,6 +1440,202 @@
                 }
             });
         });
+        
+        // Запуск оновлень в реальному часі
+        function startRealTimeUpdates() {
+            // Зупиняємо попередній інтервал, якщо він існує
+            if (checkInterval) {
+                clearInterval(checkInterval);
+            }
+            
+            // Перевіряємо нові повідомлення кожну секунду
+            checkInterval = setInterval(checkForNewMessages, 1000);
+        }
+        
+        // Перевірка нових повідомлень
+        function checkForNewMessages() {
+            // Знаходимо найновіше повідомлення
+            if (messages.length === 0) return;
+            
+            const latestMessage = Math.max(...messages.map(m => m.id));
+            
+            // Якщо є нові повідомлення
+            if (latestMessage > lastMessageId) {
+                if (isChatVisible) {
+                    // Якщо чат відкритий - оновлюємо його
+                    updateChatWithNewMessages();
+                } else {
+                    // Якщо чат не відкритий - показуємо сповіщення
+                    showNewMessageNotification(latestMessage);
+                }
+            }
+        }
+        
+        // Оновлення чату з новими повідомленнями
+        function updateChatWithNewMessages() {
+            const container = document.getElementById('chatMessages');
+            const newMessages = messages.filter(m => m.id > lastMessageId);
+            
+            if (newMessages.length === 0) return;
+            
+            // Додаємо нові повідомлення
+            newMessages.forEach(msg => {
+                const messageDiv = createMessageElement(msg);
+                container.appendChild(messageDiv);
+                
+                // Додаємо анімацію для нового повідомлення
+                setTimeout(() => {
+                    messageDiv.classList.add('new-message');
+                }, 100);
+            });
+            
+            // Оновлюємо останнє повідомлення
+            lastMessageId = Math.max(...messages.map(m => m.id));
+            saveLastMessageId();
+            
+            // Якщо користувач вже прокрутив донизу - автоматично прокручуємо
+            const isScrolledToBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 100;
+            
+            if (isScrolledToBottom) {
+                // Прокрутка донизу
+                setTimeout(() => {
+                    container.scrollTop = container.scrollHeight;
+                    hideNewMessageIndicator();
+                }, 100);
+            } else {
+                // Показуємо індикатор нових повідомлень
+                showNewMessageIndicator(newMessages.length);
+            }
+            
+            // Оновлюємо кількість онлайн
+            updateOnlineCount();
+        }
+        
+        // Показ сповіщення про нові повідомлення
+        function showNewMessageNotification(latestMessageId) {
+            const newMessagesCount = messages.filter(m => m.id > lastMessageId).length;
+            
+            if (newMessagesCount > 0) {
+                // Оновлюємо бейдж в навігації
+                const unreadBadge = document.getElementById('unreadBadge');
+                unreadCount += newMessagesCount;
+                unreadBadge.textContent = unreadCount;
+                unreadBadge.style.display = 'inline-block';
+                
+                // Додаємо вібро-ефект до іконки чату
+                const chatNav = document.querySelector('.nav-link[onclick="showChat()"]');
+                chatNav.style.animation = 'none';
+                setTimeout(() => {
+                    chatNav.style.animation = 'vibrate 0.5s';
+                }, 100);
+                
+                // Додаємо стиль для вібрації
+                if (!document.querySelector('style#vibrateStyle')) {
+                    const style = document.createElement('style');
+                    style.id = 'vibrateStyle';
+                    style.textContent = `
+                        @keyframes vibrate {
+                            0% { transform: translateX(0); }
+                            25% { transform: translateX(-2px); }
+                            50% { transform: translateX(2px); }
+                            75% { transform: translateX(-2px); }
+                            100% { transform: translateX(0); }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+            }
+        }
+        
+        // Показ індикатора нових повідомлень в чаті
+        function showNewMessageIndicator(count) {
+            const indicator = document.getElementById('newMessageIndicator');
+            indicator.innerHTML = `<i class="fas fa-arrow-down"></i> ${count} нових повідомлень`;
+            indicator.style.display = 'block';
+        }
+        
+        // Приховування індикатора нових повідомлень
+        function hideNewMessageIndicator() {
+            const indicator = document.getElementById('newMessageIndicator');
+            indicator.style.display = 'none';
+        }
+        
+        // Прокрутка до нових повідомлень
+        function scrollToNewMessages() {
+            const container = document.getElementById('chatMessages');
+            container.scrollTop = container.scrollHeight;
+            hideNewMessageIndicator();
+            
+            // Оновлюємо останнє повідомлення
+            if (messages.length > 0) {
+                lastMessageId = Math.max(...messages.map(m => m.id));
+                saveLastMessageId();
+            }
+        }
+        
+        // Створення елемента повідомлення
+        function createMessageElement(msg) {
+            const messageDiv = document.createElement('div');
+            
+            // Перевіряємо, чи це повідомлення поточного користувача
+            const isCurrentUserMessage = currentUser && msg.userId === currentUser.id;
+            
+            messageDiv.className = `message ${isCurrentUserMessage ? 'message-sent' : 'message-received'}`;
+            messageDiv.setAttribute('data-message-id', msg.id);
+            
+            // Додаємо обробник контекстного меню
+            messageDiv.addEventListener('contextmenu', function(e) {
+                showContextMenu(e, msg.id);
+            });
+            
+            // Додаємо обробник для зняття виділення при лівому кліку
+            messageDiv.addEventListener('click', function(e) {
+                if (contextMenu && !contextMenu.contains(e.target)) {
+                    hideContextMenu();
+                }
+            });
+            
+            // Відображаємо ID повідомлення тільки для адміна
+            const debugInfo = isAdmin ? `<br><small style="opacity:0.5; font-size: 9px;">ID: ${msg.id}</small>` : '';
+            
+            messageDiv.innerHTML = `
+                ${!isCurrentUserMessage ? `<div class="message-sender">${msg.sender}</div>` : ''}
+                <div>${msg.text}${debugInfo}</div>
+                <div class="message-time">${msg.time}</div>
+                <div class="message-actions">
+                    <button class="admin-delete-btn" onclick="deleteMessage(${msg.id})" title="${isAdmin ? 'Видалити як адмін' : 'Видалити своє повідомлення'}">
+                        <i class="fas fa-trash"></i> ${isAdmin && !isCurrentUserMessage ? 'Адмін' : ''}
+                    </button>
+                </div>
+            `;
+            
+            return messageDiv;
+        }
+        
+        // Обробка введення тексту (індикатор "друкує")
+        function handleTyping() {
+            if (!currentUser) return;
+            
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            
+            if (text.length > 0 && !isUserTyping) {
+                isUserTyping = true;
+                // В реальному додатку тут був би запит на сервер
+                // Для демо просто показуємо локально
+            }
+            
+            // Скидаємо таймаут
+            if (typingTimeout) {
+                clearTimeout(typingTimeout);
+            }
+            
+            // Встановлюємо новий таймаут
+            typingTimeout = setTimeout(() => {
+                isUserTyping = false;
+                // В реальному додатку тут був би запит на сервер
+            }, 1000);
+        }
         
         // Контекстне меню
         function showContextMenu(e, messageId) {
@@ -1464,6 +1764,7 @@
             hideAllSections();
             document.getElementById('homeSection').style.display = 'block';
             updateHeader();
+            isChatVisible = false;
         }
         
         function showAds() {
@@ -1471,6 +1772,7 @@
             document.getElementById('adsSection').style.display = 'block';
             renderAds();
             updateHeader();
+            isChatVisible = false;
         }
         
         function showChat() {
@@ -1484,6 +1786,19 @@
                 const chatMessages = document.getElementById('chatMessages');
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             }, 100);
+            
+            // Оновлюємо останнє повідомлення
+            if (messages.length > 0) {
+                lastMessageId = Math.max(...messages.map(m => m.id));
+                saveLastMessageId();
+            }
+            
+            // Скидаємо лічильник непрочитаних
+            unreadCount = 0;
+            const unreadBadge = document.getElementById('unreadBadge');
+            unreadBadge.style.display = 'none';
+            
+            isChatVisible = true;
         }
         
         function showAdminPanel() {
@@ -1500,6 +1815,7 @@
             }
             
             updateHeader();
+            isChatVisible = false;
         }
         
         function hideAllSections() {
@@ -1679,7 +1995,7 @@
             showHome();
         }
         
-        // Вхід адміна
+        // Вхід адміна (пароль прибраний з інтерфейсу)
         function loginAdmin() {
             const password = document.getElementById('adminPassword').value;
             
@@ -1756,12 +2072,37 @@
             
             messages.push(newMessage);
             saveData();
-            renderChatMessages();
+            
+            // Очищаємо поле вводу
             input.value = '';
             
-            // Прокрутка вниз
-            const chatMessages = document.getElementById('chatMessages');
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            // Оновлюємо чат
+            if (isChatVisible) {
+                // Якщо чат відкритий, додаємо повідомлення
+                const container = document.getElementById('chatMessages');
+                const messageDiv = createMessageElement(newMessage);
+                container.appendChild(messageDiv);
+                
+                // Анімація нового повідомлення
+                setTimeout(() => {
+                    messageDiv.classList.add('new-message');
+                }, 100);
+                
+                // Прокрутка вниз
+                setTimeout(() => {
+                    container.scrollTop = container.scrollHeight;
+                }, 50);
+            } else {
+                // Якщо чат не відкритий, оновлюємо бейдж
+                const unreadBadge = document.getElementById('unreadBadge');
+                unreadCount++;
+                unreadBadge.textContent = unreadCount;
+                unreadBadge.style.display = 'inline-block';
+            }
+            
+            // Оновлюємо останнє повідомлення
+            lastMessageId = newMessage.id;
+            saveLastMessageId();
             
             updateOnlineCount();
         }
@@ -1792,40 +2133,7 @@
             const sortedMessages = [...messages].sort((a, b) => a.id - b.id);
             
             sortedMessages.forEach(msg => {
-                const messageDiv = document.createElement('div');
-                
-                // Перевіряємо, чи це повідомлення поточного користувача
-                const isCurrentUserMessage = currentUser && msg.userId === currentUser.id;
-                
-                messageDiv.className = `message ${isCurrentUserMessage ? 'message-sent' : 'message-received'}`;
-                messageDiv.setAttribute('data-message-id', msg.id);
-                
-                // Додаємо обробник контекстного меню
-                messageDiv.addEventListener('contextmenu', function(e) {
-                    showContextMenu(e, msg.id);
-                });
-                
-                // Додаємо обробник для зняття виділення при лівому кліку
-                messageDiv.addEventListener('click', function(e) {
-                    if (contextMenu && !contextMenu.contains(e.target)) {
-                        hideContextMenu();
-                    }
-                });
-                
-                // Відображаємо ID повідомлення тільки для адміна
-                const debugInfo = isAdmin ? `<br><small style="opacity:0.5; font-size: 9px;">ID: ${msg.id}</small>` : '';
-                
-                messageDiv.innerHTML = `
-                    ${!isCurrentUserMessage ? `<div class="message-sender">${msg.sender}</div>` : ''}
-                    <div>${msg.text}${debugInfo}</div>
-                    <div class="message-time">${msg.time}</div>
-                    <div class="message-actions">
-                        <button class="admin-delete-btn" onclick="deleteMessage(${msg.id})" title="${isAdmin ? 'Видалити як адмін' : 'Видалити своє повідомлення'}">
-                            <i class="fas fa-trash"></i> ${isAdmin && !isCurrentUserMessage ? 'Адмін' : ''}
-                        </button>
-                    </div>
-                `;
-                
+                const messageDiv = createMessageElement(msg);
                 container.appendChild(messageDiv);
             });
         }
@@ -2207,6 +2515,7 @@
         window.logoutUser = logoutUser;
         window.sendMessage = sendMessage;
         window.handleChatKeyPress = handleChatKeyPress;
+        window.handleTyping = handleTyping;
         window.deleteMessage = deleteMessage;
         window.addNewAd = addNewAd;
         window.deleteAd = deleteAd;
@@ -2222,6 +2531,7 @@
         window.hideContextMenu = hideContextMenu;
         window.copyMessageText = copyMessageText;
         window.deleteSelectedMessage = deleteSelectedMessage;
+        window.scrollToNewMessages = scrollToNewMessages;
     </script>
 </body>
 </html>
